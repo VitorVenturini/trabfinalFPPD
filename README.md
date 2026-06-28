@@ -1,0 +1,383 @@
+# trabfinalFPPD
+
+Projeto de multiplicacao de matrizes em Go com versoes sequencial e paralela usando MPI, conforme o enunciado de FPPD.
+
+## Objetivo
+
+Chegar aos resultados esperados do trabalho:
+
+- implementar a versao sequencial baseline;
+- implementar a versao paralela com MPI;
+- validar que ambas produzem a mesma saida numerica;
+- executar os experimentos no cluster;
+- calcular speedup e eficiencia;
+- montar os graficos e o relatorio final.
+
+## Estrutura do repositorio
+
+- `PLANO_PROJETO.md`: arquitetura e plano tecnico.
+- `sequencial/`: executavel baseline.
+- `paralelo/`: executavel MPI.
+- `internal/`: logica compartilhada.
+- `scripts/slurm/`: scripts de execucao no cluster.
+- `scripts/local/`: validacao local.
+- `results/raw/`: logs brutos.
+- `results/processed/`: CSVs consolidados.
+- `results/plots/`: graficos finais.
+
+## Passo a passo
+
+## 1. Ler o enunciado e alinhar o escopo
+
+Antes de rodar qualquer experimento, confirmar os requisitos em:
+
+- `enunciado.md`
+- `PLANO_PROJETO.md`
+
+O que precisa obrigatoriamente existir no final:
+
+- versao sequencial;
+- versao paralela com MPI;
+- pelo menos 8 configuracoes de experimento contando o baseline;
+- 3 repeticoes por configuracao;
+- mediana dos tempos;
+- tabela com tempo, speedup e eficiencia;
+- graficos pedidos no enunciado;
+- relatorio final.
+
+## 2. Preparar o ambiente local
+
+Instalar e validar:
+
+- Go 1.22 ou superior;
+- MPI com `mpirun`;
+- acesso ao pacote `github.com/mnlphlp/gompi`.
+
+Conferencias minimas:
+
+```bash
+go version
+mpirun --version
+```
+
+Se o projeto ainda nao tiver dependencias baixadas:
+
+```bash
+go mod tidy
+```
+
+## 3. Validar a base localmente
+
+Rodar os testes das partes puras:
+
+```bash
+go test ./...
+```
+
+Ou no PowerShell:
+
+```powershell
+.\scripts\local\validate.ps1
+```
+
+Objetivo desta etapa:
+
+- confirmar que a multiplicacao sequencial esta correta;
+- confirmar que o particionamento por linhas esta correto;
+- confirmar que a verificacao de checksum e cantos funciona.
+
+## 4. Validar a versao sequencial
+
+Executar primeiro com matriz pequena:
+
+```bash
+go run ./sequencial -n 4 -seed 42
+go run ./sequencial -n 8 -seed 42
+go run ./sequencial -n 16 -seed 42
+```
+
+Depois executar com um tamanho maior de teste:
+
+```bash
+go run ./sequencial -n 256 -seed 42
+```
+
+Conferir:
+
+- o programa executa sem erro;
+- a saida mostra tempo;
+- a saida mostra `c00`, `c0n`, `cn0`, `cnn` e `checksum`.
+
+## 5. Validar a versao paralela localmente
+
+Executar com tamanhos pequenos e poucos processos:
+
+```bash
+mpirun -np 1 go run ./paralelo -n 4 -seed 42
+mpirun -np 2 go run ./paralelo -n 4 -seed 42
+mpirun -np 3 go run ./paralelo -n 8 -seed 42
+mpirun -np 4 go run ./paralelo -n 16 -seed 42
+```
+
+Nesta etapa, comparar manualmente a saida da versao paralela com a sequencial para o mesmo `n` e a mesma `seed`.
+
+Os valores abaixo devem ser identicos entre as duas execucoes:
+
+- `c00`
+- `c0n`
+- `cn0`
+- `cnn`
+- `checksum`
+
+Se os valores divergirem, nao avancar para o cluster antes de corrigir.
+
+## 6. Testar casos importantes antes do cluster
+
+Rodar casos que cobrem divisao desigual:
+
+```bash
+mpirun -np 3 go run ./paralelo -n 10 -seed 42
+mpirun -np 4 go run ./paralelo -n 10 -seed 42
+mpirun -np 6 go run ./paralelo -n 10 -seed 42
+```
+
+Objetivo:
+
+- validar `N % P != 0`;
+- validar ranks com menos linhas;
+- reduzir risco de erro de particionamento.
+
+## 7. Definir o tamanho final do problema
+
+O enunciado pede:
+
+- usar `N = 3000` como padrao;
+- se o sequencial no cluster ficar abaixo de 3 minutos, subir para `N = 4000`.
+
+Procedimento:
+
+1. Rodar o baseline sequencial no cluster com `N=3000`.
+2. Medir o tempo.
+3. Se o tempo for menor que 3 minutos, repetir com `N=4000`.
+4. Fixar o valor final de `N` para todos os experimentos.
+
+Esse valor deve ser documentado no relatorio.
+
+## 8. Preparar o cluster
+
+Antes de submeter jobs, ajustar no cluster:
+
+- modulo do Go;
+- modulo do MPI;
+- ambiente necessario para compilar e rodar `gompi`.
+
+Tambem revisar os scripts em:
+
+- `scripts/slurm/run_seq.sh`
+- `scripts/slurm/run_mpi_1node.sh`
+- `scripts/slurm/run_mpi_multinode.sh`
+- `scripts/slurm/run_experiments.sh`
+
+Pontos para ajustar conforme o cluster real:
+
+- `module load ...`
+- comando `mpirun` ou `srun`;
+- tempo de walltime;
+- numero de tarefas;
+- numero de nos;
+- caminho de saida dos logs.
+
+## 9. Rodar o baseline sequencial no cluster
+
+Submeter primeiro o baseline:
+
+```bash
+sbatch scripts/slurm/run_seq.sh
+```
+
+Ou executar manualmente:
+
+```bash
+go run ./sequencial -n 3000 -seed 42 -csv results/processed/seq.csv
+```
+
+Guardar:
+
+- tempo do baseline `Ts`;
+- saida de verificacao;
+- valor final de `N`.
+
+## 10. Rodar a versao paralela no cluster
+
+Executar configuracoes que cubram os 3 fatores do enunciado:
+
+- escalabilidade por numero de processos;
+- comparacao intra-no vs inter-nos;
+- impacto de hyperthreading.
+
+Conjunto inicial sugerido:
+
+1. `1 no`, `1 processo`
+2. `1 no`, `2 processos`
+3. `1 no`, `4 processos`
+4. `1 no`, `8 processos`
+5. `1 no`, `16 processos`
+6. `2 nos`, `8 processos`
+7. `2 nos`, `16 processos`
+8. mais uma configuracao com oversubscription, se fizer sentido no cluster
+
+Exemplo com script:
+
+```bash
+sbatch scripts/slurm/run_mpi_1node.sh
+sbatch scripts/slurm/run_mpi_multinode.sh
+```
+
+Exemplo manual:
+
+```bash
+mpirun -np 8 go run ./paralelo -n 3000 -seed 42 -csv results/processed/parallel.csv
+```
+
+## 11. Repetir cada configuracao 3 vezes
+
+O enunciado exige pelo menos 3 execucoes por configuracao.
+
+Para cada combinacao de nos e processos:
+
+1. rodar 3 vezes;
+2. registrar os 3 tempos;
+3. calcular a mediana;
+4. usar a mediana nas tabelas e graficos.
+
+O script `scripts/slurm/run_experiments.sh` ja pode servir como base para essa automacao.
+
+## 12. Salvar todos os resultados
+
+Durante os experimentos, organizar os arquivos assim:
+
+- logs brutos em `results/raw/`;
+- CSVs em `results/processed/`;
+- graficos em `results/plots/`.
+
+Cada execucao deve preservar:
+
+- modo;
+- `N`;
+- numero de nos;
+- numero de processos;
+- tempo;
+- checksum;
+- valores de verificacao.
+
+Nao misturar resultados de testes pequenos com resultados finais do relatorio.
+
+## 13. Conferir corretude antes da analise final
+
+Antes de calcular speedup, verificar que as execucoes finais mantiveram a mesma saida numerica.
+
+Conferir:
+
+- baseline sequencial;
+- paralelo com `P=1`;
+- paralelo com `P>1`.
+
+Se checksum ou cantos diferirem, os tempos nao servem para o relatorio.
+
+## 14. Calcular speedup e eficiencia
+
+Com os tempos medianos:
+
+- `Speedup = Ts / Tp`
+- `Eficiencia = Speedup / P`
+
+Onde:
+
+- `Ts` = tempo sequencial baseline;
+- `Tp` = tempo paralelo da configuracao;
+- `P` = numero de processos.
+
+Esses dados devem ser colocados em uma tabela final.
+
+## 15. Montar os graficos obrigatorios
+
+Produzir pelo menos estes 3 graficos:
+
+1. `Speedup vs numero de processos`
+2. `Eficiencia vs numero de processos`
+3. `Tempo intra-no vs inter-nos`
+
+Adicionar referencias ideais:
+
+- reta `speedup ideal = P`
+- reta `eficiencia ideal = 1`
+
+## 16. Responder as perguntas do relatorio
+
+Com os dados em maos, responder:
+
+1. o speedup foi sub-linear, linear ou super-linear;
+2. a partir de que ponto a eficiencia caiu;
+3. qual foi o impacto da comunicacao em rede;
+4. se hyperthreading ajudou ou nao;
+5. qual a fracao paralelizavel estimada pela Lei de Amdahl.
+
+Nao responder de forma generica. As respostas devem citar os resultados obtidos.
+
+## 17. Fechar o relatorio final
+
+O relatorio deve incluir:
+
+- modelo de paralelismo escolhido;
+- justificativa da escolha;
+- como os dados sao distribuidos;
+- como os resultados sao coletados;
+- tabela com tempos, speedup e eficiencia;
+- graficos obrigatorios;
+- discussao das perguntas do enunciado;
+- valor final de `N`;
+- instrucoes de compilacao e execucao.
+
+## 18. Checklist final de entrega
+
+Antes de entregar, confirmar:
+
+- `go.mod` presente;
+- versao sequencial funcionando;
+- versao paralela funcionando;
+- instrucoes no `README.md`;
+- scripts SLURM revisados;
+- resultados brutos guardados;
+- tabela final pronta;
+- graficos prontos;
+- relatorio pronto.
+
+## Comandos principais
+
+Sequencial:
+
+```bash
+go run ./sequencial -n 3000 -seed 42
+```
+
+Paralelo:
+
+```bash
+mpirun -np 4 go run ./paralelo -n 3000 -seed 42
+```
+
+Testes:
+
+```bash
+go test ./...
+```
+
+Script local no PowerShell:
+
+```powershell
+.\scripts\local\validate.ps1
+```
+
+## Observacao
+
+O ambiente desta sessao nao possui `go` nem `mpirun` no `PATH`, entao o codigo foi implementado, mas nao validado aqui por compilacao nem execucao real. A validacao precisa ser feita no ambiente local de voces ou diretamente no cluster.
