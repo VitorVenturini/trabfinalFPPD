@@ -29,37 +29,29 @@ func main() {
 		return
 	}
 
-	// All processes wait here for a clean start before timing.
-	comm.Barrier()
-	start := mpi.WTime()
-
-	var localWork mpiutil.DistributedWork
-	var localC []float64
+	var (
+		n          = cfg.N
+		localWork  mpiutil.DistributedWork
+		partitions []matrix.WorkPartition
+	)
 
 	if rank == 0 {
 		if !cfg.Quiet {
 			fmt.Printf("Running parallel matrix multiplication with n=%d and processes=%d\n", cfg.N, processes)
 		}
+
 		a, b := matrix.GenerateRandomPair(cfg.N, cfg.Seed)
-		partitions := matrix.BuildPartitions(cfg.N, processes)
+		partitions = matrix.BuildPartitions(cfg.N, processes)
+
+		comm.Barrier()
+		start := mpi.WTime()
 		localWork = mpiutil.DistributeFromRoot(comm, cfg.N, a, b, partitions)
-	} else {
-		_, localWork = mpiutil.ReceiveFromRoot(comm)
-	}
-
-	// All processes (including rank 0) perform their share of the multiplication.
-	localC := make([]float64, localWork.Partition.ElemCount)
-	matrix.MultiplyRows(localWork.AChunk, localWork.BFull, localC, cfg.N)
-
-	// Stop the local timer. The total elapsed time will be the maximum of all local timers.
-	localElapsed := mpi.WTime() - start
-
-	// The root process collects results and timings, then prints the final output.
-	if rank == 0 {
-		partitions := matrix.BuildPartitions(cfg.N, processes)
+		localC := make([]float64, localWork.Partition.ElemCount)
+		matrix.MultiplyRows(localWork.AChunk, localWork.BFull, localC, cfg.N)
 		c := mpiutil.CollectToRoot(comm, cfg.N, partitions, localC)
-		elapsed := collectMaxElapsed(comm, localElapsed, processes)
+		localElapsed := mpi.WTime() - start
 
+		elapsed := collectMaxElapsed(comm, localElapsed, processes)
 		result := metrics.RunResult{
 			Mode:         "parallel",
 			N:            cfg.N,
@@ -70,18 +62,28 @@ func main() {
 			Label:        cfg.Label,
 			Verification: matrix.ComputeVerification(c, cfg.N),
 		}
+
 		output.PrintResult(os.Stdout, result)
 
 		if cfg.CSV != "" {
 			if err := metrics.AppendCSV(cfg.CSV, result); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to write CSV: %v\n", err)
+				return
 			}
 		}
-	} else {
-		// Worker processes send their results and elapsed time to the root.
-		mpiutil.SendResultToRoot(comm, localC)
-		comm.Send([]float64{localElapsed}, 0, mpiutil.TagElapsed)
+
+		return
 	}
+
+	comm.Barrier()
+	start := mpi.WTime()
+	n, localWork = mpiutil.ReceiveFromRoot(comm)
+	localC := make([]float64, localWork.Partition.ElemCount)
+
+	matrix.MultiplyRows(localWork.AChunk, localWork.BFull, localC, n)
+	mpiutil.SendResultToRoot(comm, localC)
+	localElapsed := mpi.WTime() - start
+	comm.Send([]float64{localElapsed}, 0, mpiutil.TagElapsed)
 }
 
 func collectMaxElapsed(comm interface {
@@ -91,6 +93,7 @@ func collectMaxElapsed(comm interface {
 	for source := 1; source < processes; source++ {
 		buffer := make([]float64, 1)
 		comm.Recv(buffer, source, mpiutil.TagElapsed)
+
 		if buffer[0] > maxElapsed {
 			maxElapsed = buffer[0]
 		}
