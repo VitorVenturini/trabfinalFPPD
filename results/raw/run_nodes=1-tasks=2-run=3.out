@@ -1,0 +1,9 @@
+Running parallel job with N=3000, tasks=2, nodes=1
+Running parallel matrix multiplication with n=3000 and processes=2
+mode=parallel n=3000 seed=42 nodes=1 processes=2 elapsed_sec=340.547696 label="nodes=1-tasks=2-run=3"
+verification:
+  c00=761.944762419156746
+  c0n=749.373135218255243
+  cn0=746.504566928480585
+  cnn=748.433823443028814
+  checksum=6749729449.415625572204590
