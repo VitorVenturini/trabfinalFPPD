@@ -14,6 +14,7 @@ configs=(
   "1 4"   # Intra-node
   "1 8"   # Intra-node
   "1 16"  # Intra-node (full node?)
+  "1 32"  # Intra-node (oversubscription/hyperthreading test)
   "2 8"   # Inter-node (4 tasks per node)
   "2 16"  # Inter-node (8 tasks per node)
 )

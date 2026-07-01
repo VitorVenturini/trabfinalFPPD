@@ -4,7 +4,8 @@
 # from an orchestrator script like run_experiments.sh.
 #
 # Default SBATCH directives (can be overridden by sbatch command line options)
-#SBATCH --time=00:30:00
+#SBATCH --time=01:00:00
+#SBATCH --mem-per-cpu=500M
 
 set -euo pipefail
 
