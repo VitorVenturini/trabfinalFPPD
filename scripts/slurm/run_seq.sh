@@ -9,4 +9,8 @@ set -euo pipefail
 
 mkdir -p results/raw results/processed
 
-go run ./sequencial -n "${N:-3000}" -seed "${SEED:-42}" -csv "${CSV:-results/processed/seq.csv}"
+echo "Compiling sequential binary..."
+go build -o bin/sequencial ./sequencial
+
+echo "Running sequential..."
+./bin/sequencial -n "${N:-3000}" -seed "${SEED:-42}" -csv "${CSV:-results/processed/seq.csv}"

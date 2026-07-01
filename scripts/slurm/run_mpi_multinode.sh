@@ -9,4 +9,8 @@ set -euo pipefail
 
 mkdir -p results/raw results/processed
 
-mpirun -np "${TASKS:-8}" go run ./paralelo -n "${N:-3000}" -seed "${SEED:-42}" -csv "${CSV:-results/processed/parallel-multinode.csv}"
+echo "Compiling parallel binary..."
+go build -o bin/paralelo ./paralelo
+
+echo "Running parallel with ${SLURM_NTASKS} tasks on ${SLURM_NNODES} node(s)..."
+mpirun ./bin/paralelo -n "${N:-3000}" -seed "${SEED:-42}" -csv "${CSV:-results/processed/parallel-multinode.csv}"
