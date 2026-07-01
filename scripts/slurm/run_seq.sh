@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=00:30:00
-#SBATCH --output=%x-%j.out
+#SBATCH --output=results/raw/%x-%j.out
 
 set -euo pipefail
 
