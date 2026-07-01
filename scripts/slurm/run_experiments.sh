@@ -4,6 +4,8 @@ set -euo pipefail
 
 mkdir -p results/raw results/processed
 
+MAX_JOBS=2 # Limite de jobs simultaneos conforme o enunciado
+
 N_VALUE="${N:-3000}"
 SEED_VALUE="${SEED:-42}"
 
@@ -25,6 +27,16 @@ go build -o bin/paralelo ./paralelo
 for config in "${configs[@]}"; do
   read -r nodes tasks <<< "${config}"
   for run in 1 2 3; do
+    # Espera ate que haja um slot livre na fila do SLURM
+    while true; do
+      current_jobs=$(squeue -u "$USER" -h | wc -l)
+      if [ "$current_jobs" -lt "$MAX_JOBS" ]; then
+        break
+      fi
+      echo "Fila cheia (${current_jobs} jobs). Aguardando 30s por um slot..."
+      sleep 30
+    done
+
     label="nodes=${nodes}-tasks=${tasks}-run=${run}"
     output_csv="results/processed/run_${label}.csv"
     output_log="results/raw/run_${label}.out"
@@ -35,3 +47,5 @@ for config in "${configs[@]}"; do
       scripts/slurm/run_mpi_job.sh "${N_VALUE}" "${SEED_VALUE}" "${output_csv}" "${label}"
   done
 done
+
+echo "Todos os jobs foram submetidos. Monitore a conclusao com 'squeue -u $USER'."

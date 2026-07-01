@@ -172,25 +172,15 @@ Esse valor deve ser documentado no relatorio.
 
 Antes de submeter jobs, ajustar no cluster:
 
-- modulo do Go;
-- modulo do MPI;
-- ambiente necessario para compilar e rodar `gompi`.
+1.  **Dar permissao de execucao aos scripts:**
+    ```bash
+    chmod +x scripts/slurm/*.sh
+    ```
+2.  **Carregar modulos de ambiente (se necessario):**
+    Verificar se `go` e `mpirun` estao disponiveis. Se nao, usar `module load` ou `export PATH=...`.
 
-Tambem revisar os scripts em:
-
-- `scripts/slurm/run_seq.sh`
-- `scripts/slurm/run_mpi_1node.sh`
-- `scripts/slurm/run_mpi_multinode.sh`
-- `scripts/slurm/run_experiments.sh`
-
-Pontos para ajustar conforme o cluster real:
-
-- `module load ...`
-- comando `mpirun` ou `srun`;
-- tempo de walltime;
-- numero de tarefas;
-- numero de nos;
-- caminho de saida dos logs.
+3.  **Revisar os scripts SLURM:**
+    Conferir os scripts em `scripts/slurm/` para ajustar parametros como tempo de walltime, numero de nos/tarefas, etc., conforme a necessidade do cluster.
 
 ## 9. Rodar o baseline sequencial no cluster
 
