@@ -110,14 +110,20 @@ Conferir:
 
 ## 5. Validar a versao paralela localmente
 
-Executar com tamanhos pequenos e poucos processos:
+Primeiro, compile o executavel:
 
 ```bash
-mpirun -np 1 go run ./paralelo -n 4 -seed 42
-mpirun -np 2 go run ./paralelo -n 4 -seed 42
-mpirun -np 3 go run ./paralelo -n 8 -seed 42
-mpirun -np 4 go run ./paralelo -n 16 -seed 42
+go build -o bin/paralelo ./paralelo
 ```
+
+Depois, execute com tamanhos pequenos e poucos processos:
+
+```bash
+mpirun -np 2 ./bin/paralelo -n 4 -seed 42
+mpirun --oversubscribe -np 4 ./bin/paralelo -n 16 -seed 42
+```
+
+> **Observacao:** Se ao rodar localmente com `-np` maior que o numero de nucleos do seu processador voce receber um erro sobre "not enough slots", adicione a flag `--oversubscribe` ao comando `mpirun`.
 
 Nesta etapa, comparar manualmente a saida da versao paralela com a sequencial para o mesmo `n` e a mesma `seed`.
 
@@ -134,11 +140,10 @@ Se os valores divergirem, nao avancar para o cluster antes de corrigir.
 ## 6. Testar casos importantes antes do cluster
 
 Rodar casos que cobrem divisao desigual:
-
 ```bash
-mpirun -np 3 go run ./paralelo -n 10 -seed 42
-mpirun -np 4 go run ./paralelo -n 10 -seed 42
-mpirun -np 6 go run ./paralelo -n 10 -seed 42
+mpirun --oversubscribe -np 3 ./bin/paralelo -n 10 -seed 42
+mpirun --oversubscribe -np 4 ./bin/paralelo -n 10 -seed 42
+mpirun --oversubscribe -np 6 ./bin/paralelo -n 10 -seed 42
 ```
 
 Objetivo:

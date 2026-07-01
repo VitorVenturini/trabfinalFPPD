@@ -3,11 +3,9 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=00:30:00
-#SBATCH --output=results/raw/seq-%j.out
+#SBATCH --output=%x-%j.out
 
 set -euo pipefail
-
-mkdir -p results/raw results/processed
 
 echo "Compiling sequential binary..."
 go build -o bin/sequencial ./sequencial
