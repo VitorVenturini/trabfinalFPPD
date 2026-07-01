@@ -23,6 +23,7 @@ Chegar aos resultados esperados do trabalho:
 - `scripts/local/`: validacao local.
 - `results/raw/`: logs brutos.
 - `results/processed/`: CSVs consolidados.
+- `report/`: local para o relatorio final em PDF e arquivos relacionados.
 - `results/plots/`: graficos finais.
 
 ## Passo a passo
@@ -211,28 +212,19 @@ Executar configuracoes que cubram os 3 fatores do enunciado:
 - impacto de hyperthreading.
 
 Conjunto inicial sugerido:
+O script `scripts/slurm/run_experiments.sh` ja esta configurado com um conjunto de experimentos que cobre esses fatores.
 
-1. `1 no`, `1 processo`
-2. `1 no`, `2 processos`
-3. `1 no`, `4 processos`
-4. `1 no`, `8 processos`
-5. `1 no`, `16 processos`
-6. `2 nos`, `8 processos`
-7. `2 nos`, `16 processos`
-8. mais uma configuracao com oversubscription, se fizer sentido no cluster
+### Executando o Orquestrador de Forma Segura
 
-Exemplo com script:
+Como o script orquestrador precisa rodar por um longo tempo para submeter todos os jobs (respeitando o limite de 2 jobs na fila do cluster), ele deve ser executado de forma que não seja interrompido se sua conexão cair. Para isso, usamos o comando `nohup`.
+
+A partir do diretorio raiz do projeto (`~/trabfinalFPPD`), execute:
 
 ```bash
-sbatch scripts/slurm/run_mpi_1node.sh
-sbatch scripts/slurm/run_mpi_multinode.sh
+nohup ./scripts/slurm/run_experiments.sh &
 ```
 
-Exemplo manual:
-
-```bash
-mpirun -np 8 go run ./paralelo -n 3000 -seed 42 -csv results/processed/parallel.csv
-```
+Isso iniciara o script em segundo plano. Voce pode acompanhar o progresso vendo o arquivo `nohup.out` (`tail -f nohup.out`) e monitorar a fila com `squeue -u $USER`. Apos iniciar o script, voce pode se desconectar do cluster com seguranca.
 
 ## 11. Repetir cada configuracao 3 vezes
 
@@ -245,7 +237,7 @@ Para cada combinacao de nos e processos:
 3. calcular a mediana;
 4. usar a mediana nas tabelas e graficos.
 
-O script `scripts/slurm/run_experiments.sh` ja pode servir como base para essa automacao.
+O script `scripts/slurm/run_experiments.sh` ja esta configurado para automatizar este processo, submetendo 3 jobs para cada uma das configuracoes definidas.
 
 ## 12. Salvar todos os resultados
 

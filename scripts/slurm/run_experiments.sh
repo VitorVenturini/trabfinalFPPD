@@ -11,12 +11,9 @@ SEED_VALUE="${SEED:-42}"
 
 configs=(
   # nodes tasks
-  "1 1"   # Baseline P=1
-  "1 2"   # Intra-node
-  "1 4"   # Intra-node
-  "1 8"   # Intra-node
-  "1 16"  # Intra-node (full node?)
-  "1 32"  # Intra-node (oversubscription/hyperthreading test)
+  # As configuracoes de 1 no ja foram executadas.
+  # A configuracao "1 32" falhou por limitacao do cluster (resultado valido).
+  # Executando apenas as configuracoes restantes.
   "2 8"   # Inter-node (4 tasks per node)
   "2 16"  # Inter-node (8 tasks per node)
 )
