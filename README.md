@@ -339,6 +339,34 @@ Antes de entregar, confirmar:
 - graficos prontos;
 - relatorio pronto.
 
+## 19. Baixando os Resultados do Cluster
+ 
+ Após gerar os resultados (CSVs, gráficos, etc.) no cluster, você precisará transferi-los para sua máquina local para incluí-los no relatório.
+ 
+ ### Método 1: Usando Git (Recomendado)
+ 
+ Se você já está usando Git, a forma mais simples e organizada é comitar os resultados.
+ 
+ 1.  **No cluster:** Adicione, comite e envie os resultados para o seu repositório.
+     ```bash
+     git add results/ scripts/analysis/
+     git commit -m "Adiciona resultados e gráficos dos experimentos"
+     git push
+     ```
+ 2.  **No seu PC local:** Abra o projeto no VS Code e puxe as atualizações.
+     ```bash
+     git pull
+     ```
+ 
+ ### Método 2: Usando `scp` ou Cliente SFTP
+ 
+ Se preferir não comitar os arquivos de resultado, você pode usar `scp` (Secure Copy) ou um cliente SFTP como WinSCP ou FileZilla para transferir os arquivos manualmente.
+ 
+ ```bash
+ # Exemplo de SCP para baixar os gráficos
+ scp fppd3217@atlantica:~/trabfinalFPPD/results/plots/*.png ./
+ ```
+
 ## Comandos principais
 
 Sequencial:
