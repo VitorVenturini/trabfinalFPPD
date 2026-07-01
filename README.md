@@ -51,7 +51,7 @@ Instalar e validar:
 
 - Go 1.22 ou superior;
 - MPI com `mpirun`;
-- acesso ao pacote `github.com/mnlphlp/gompi`.
+- acesso ao pacote `github.com/mvneves/gompi`.
 
 Conferencias minimas:
 

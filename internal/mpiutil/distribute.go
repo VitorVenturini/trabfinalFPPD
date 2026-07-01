@@ -1,7 +1,7 @@
 package mpiutil
 
 import (
-	gompicomm "github.com/mnlphlp/gompi/comm"
+	gompicomm "github.com/mvneves/gompi/comm"
 
 	"trabfinalfppd/internal/matrix"
 )

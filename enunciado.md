@@ -26,7 +26,7 @@ Um programa em Go que:
  Mede e imprime o tempo de execução.
  Imprime valores de vericação (ex.: cantos da matriz C e/ou checksum).
 2. Versão paralela com MPI
-Um programa em Go usando o pacote github.com/mnlphlp/gompi que distribua o cálculo da
+Um programa em Go usando o pacote github.com/mvneves/gompi que distribua o cálculo da
 multiplicação entre múltiplos processos MPI.
 O grupo deve:
 1. Escolher um modelo de paralelismo (Mestre-Escravo, Fases Paralelas, ou outro) e
@@ -140,7 +140,7 @@ Usar time.Now() e time.Since() em Go. Medir apenas o tempo da computação paral
 (incluindo distribuição e coleta de dados, se houver). Excluir a geração das matrizes e a impressão
 dos resultados.
 Regras Gerais
-1. Linguagem: Go, com MPI via github.com/mnlphlp/gompi.
+1. Linguagem: Go, com MPI via github.com/mvneves/gompi.
 2. Cluster: Todas as medições devem ser feitas no cluster Atlântica usando SLURM.
 3. Reprodutibilidade: Seed xa. Os resultados numéricos devem ser idênticos entre versão
 sequencial e paralela.
